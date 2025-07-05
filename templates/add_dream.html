@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="mb-0">
+                    <i class="fas fa-plus text-primary"></i>
+                    Record Your Dream
+                </h3>
+                <p class="text-muted mb-0">Capture your dream while it's fresh in your memory</p>
+            </div>
+            <div class="card-body">
+                <form id="dreamForm">
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Dream Title</label>
+                        <input type="text" class="form-control" id="title" name="title" 
+                               placeholder="Give your dream a memorable title..." required>
+                        <div class="form-text">A short, descriptive title for your dream</div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="content" class="form-label">Dream Description</label>
+                        <textarea class="form-control" id="content" name="content" rows="8" 
+                                  placeholder="Describe your dream in as much detail as you can remember...&#10;&#10;What did you see? Who was there? How did you feel? What happened?&#10;&#10;Include colors, emotions, sensations, and any symbols that stood out to you." required></textarea>
+                        <div class="form-text">The more detailed your description, the better our AI can analyze it</div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="/dreams" class="btn btn-outline-secondary me-md-2">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary" id="submitBtn">
+                            <i class="fas fa-brain"></i> Analyze Dream
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Analysis Results Modal -->
+<div class="modal fade" id="analysisModal" tabindex="-1" aria-labelledby="analysisModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="analysisModalLabel">
+                    <i class="fas fa-brain text-primary"></i>
+                    Dream Analysis Complete
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="analysisResults">
+                <!-- Analysis results will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <a href="/dreams" class="btn btn-primary">View All Dreams</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Modal -->
+<div class="modal fade" id="loadingModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center p-4">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <h6>Analyzing your dream...</h6>
+                <p class="text-muted small mb-0">Our AI is processing your dream content and identifying patterns, emotions, and themes.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('dreamForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const title = document.getElementById('title').value;
+    const content = document.getElementById('content').value;
+    const submitBtn = document.getElementById('submitBtn');
+    
+    if (!title.trim() || !content.trim()) {
+        alert('Please fill in both title and description');
+        return;
+    }
+    
+    // Show loading modal
+    const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+    loadingModal.show();
+    
+    // Disable submit button
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing...';
+    
+    try {
+        const formData = new FormData();
+        formData.append('title', title);
+        formData.append('content', content);
+        
+        const response = await fetch('/add_dream', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        // Hide loading modal
+        loadingModal.hide();
+        
+        if (result.success) {
+            // Show analysis results
+            displayAnalysisResults(result.analysis, title);
+            
+            // Reset form
+            document.getElementById('dreamForm').reset();
+        } else {
+            alert('Error: ' + (result.error || 'Failed to save dream'));
+        }
+    } catch (error) {
+        loadingModal.hide();
+        alert('Error: ' + error.message);
+    } finally {
+        // Re-enable submit button
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-brain"></i> Analyze Dream';
+    }
+});
+
+function displayAnalysisResults(analysis, title) {
+    const resultsContainer = document.getElementById('analysisResults');
+    
+    let emotionsHtml = '';
+    if (analysis.emotions && Object.keys(analysis.emotions).length > 0) {
+        emotionsHtml = Object.entries(analysis.emotions)
+            .map(([emotion, count]) => `<span class="emotion-tag">${emotion} (${count})</span>`)
+            .join(' ');
+    } else {
+        emotionsHtml = '<span class="text-muted">No specific emotions detected</span>';
+    }
+    
+    let themesHtml = '';
+    if (analysis.themes && Object.keys(analysis.themes).length > 0) {
+        themesHtml = Object.entries(analysis.themes)
+            .map(([theme, count]) => `<span class="theme-tag">${theme} (${count})</span>`)
+            .join(' ');
+    } else {
+        themesHtml = '<span class="text-muted">No specific themes detected</span>';
+    }
+    
+    const sentimentScore = analysis.sentiment ? analysis.sentiment.compound : 0;
+    let sentimentLabel = 'Neutral';
+    let sentimentColor = 'secondary';
+    
+    if (sentimentScore > 0.05) {
+        sentimentLabel = 'Positive';
+        sentimentColor = 'success';
+    } else if (sentimentScore < -0.05) {
+        sentimentLabel = 'Negative';
+        sentimentColor = 'danger';
+    }
+    
+    resultsContainer.innerHTML = `
+        <div class="row">
+            <div class="col-md-6">
+                <h6><i class="fas fa-heart text-danger"></i> Detected Emotions</h6>
+                <div class="mb-3">${emotionsHtml}</div>
+                
+                <h6><i class="fas fa-tags text-info"></i> Dream Themes</h6>
+                <div class="mb-3">${themesHtml}</div>
+            </div>
+            <div class="col-md-6">
+                <h6><i class="fas fa-chart-bar text-primary"></i> Sentiment Analysis</h6>
+                <div class="mb-3">
+                    <span class="badge bg-${sentimentColor} fs-6">${sentimentLabel}</span>
+                    <div class="progress mt-2" style="height: 8px;">
+                        <div class="progress-bar bg-${sentimentColor}" role="progressbar" 
+                             style="width: ${Math.abs(sentimentScore) * 100}%"></div>
+                    </div>
+                </div>
+                
+                <h6><i class="fas fa-book text-warning"></i> Dream Structure</h6>
+                <div class="small text-muted">
+                    <p><strong>Word Count:</strong> ${analysis.word_count || 'N/A'}</p>
+                    <p><strong>Unique Words:</strong> ${analysis.unique_words || 'N/A'}</p>
+                    <p><strong>Narrative:</strong> ${analysis.structure?.narrative_flow || 'N/A'}</p>
+                </div>
+            </div>
+        </div>
+        
+        <hr>
+        
+        <h6><i class="fas fa-lightbulb text-warning"></i> AI Interpretation</h6>
+        <div class="alert alert-light">
+            <p class="mb-0">${analysis.interpretation || 'No interpretation available.'}</p>
+        </div>
+    `;
+    
+    // Show analysis modal
+    const analysisModal = new bootstrap.Modal(document.getElementById('analysisModal'));
+    analysisModal.show();
+}
+
+// Character counter for textarea
+document.getElementById('content').addEventListener('input', function() {
+    const maxLength = 5000;
+    const currentLength = this.value.length;
+    
+    if (!document.getElementById('charCounter')) {
+        const counter = document.createElement('div');
+        counter.id = 'charCounter';
+        counter.className = 'form-text text-end mt-1';
+        this.parentNode.appendChild(counter);
+    }
+    
+    const counter = document.getElementById('charCounter');
+    counter.textContent = `${currentLength}/${maxLength} characters`;
+    
+    if (currentLength > maxLength * 0.9) {
+        counter.className = 'form-text text-end mt-1 text-warning';
+    } else {
+        counter.className = 'form-text text-end mt-1';
+    }
+});
+</script>
+{% endblock %}

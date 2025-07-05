@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h2 class="mb-4">
+            <i class="fas fa-chart-line text-primary"></i>
+            Dream Insights & Patterns
+        </h2>
+        
+        {% if insights.message %}
+        <div class="text-center py-5">
+            <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+            <h4 class="text-muted">{{ insights.message }}</h4>
+            <a href="/add_dream" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Add Your First Dream
+            </a>
+        </div>
+        {% else %}
+        
+        <!-- Summary Cards -->
+        <div class="row mb-4">
+            <div class="col-md-3 mb-3">
+                <div class="card text-center border-0 bg-primary text-white">
+                    <div class="card-body">
+                        <i class="fas fa-book fa-2x mb-2"></i>
+                        <h4>{{ insights.total_dreams }}</h4>
+                        <small>Total Dreams</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card text-center border-0 bg-success text-white">
+                    <div class="card-body">
+                        <i class="fas fa-chart-bar fa-2x mb-2"></i>
+                        <h4>{{ "%.2f"|format(insights.average_sentiment) }}</h4>
+                        <small>Avg Sentiment</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card text-center border-0 bg-info text-white">
+                    <div class="card-body">
+                        <i class="fas fa-heart fa-2x mb-2"></i>
+                        <h4>{{ insights.most_common_emotions|length }}</h4>
+                        <small>Emotion Types</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card text-center border-0 bg-warning text-white">
+                    <div class="card-body">
+                        <i class="fas fa-tags fa-2x mb-2"></i>
+                        <h4>{{ insights.most_common_themes|length }}</h4>
+                        <small>Theme Types</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-heart text-danger"></i>
+                            Most Common Emotions
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        {% if insights.most_common_emotions %}
+                        <div class="row">
+                            {% for emotion, count in insights.most_common_emotions.items() %}
+                            <div class="col-6 mb-3">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="emotion-tag">{{ emotion }}</span>
+                                    <span class="badge bg-secondary">{{ count }}</span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p class="text-muted">No emotions detected yet. Add more dreams to see patterns.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-tags text-info"></i>
+                            Most Common Themes
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        {% if insights.most_common_themes %}
+                        <div class="row">
+                            {% for theme, count in insights.most_common_themes.items() %}
+                            <div class="col-6 mb-3">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="theme-tag">{{ theme }}</span>
+                                    <span class="badge bg-secondary">{{ count }}</span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p class="text-muted">No themes detected yet. Add more dreams to see patterns.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-trending-up text-success"></i>
+                            Emotional Trend
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-light">
+                            <p class="mb-0">{{ insights.emotional_trend }}</p>
+                        </div>
+                        
+                        {% if insights.average_sentiment > 0.05 %}
+                        <div class="progress mb-3">
+                            <div class="progress-bar bg-success" role="progressbar" 
+                                 style="width: {{ (insights.average_sentiment * 100)|round }}%">
+                                Positive ({{ "%.2f"|format(insights.average_sentiment) }})
+                            </div>
+                        </div>
+                        {% elif insights.average_sentiment < -0.05 %}
+                        <div class="progress mb-3">
+                            <div class="progress-bar bg-danger" role="progressbar" 
+                                 style="width: {{ (insights.average_sentiment * -100)|round }}%">
+                                Negative ({{ "%.2f"|format(insights.average_sentiment) }})
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="progress mb-3">
+                            <div class="progress-bar bg-secondary" role="progressbar" style="width: 50%">
+                                Neutral ({{ "%.2f"|format(insights.average_sentiment) }})
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-lightbulb text-warning"></i>
+                            Personalized Recommendations
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        {% if insights.recommendations %}
+                        <ul class="list-unstyled">
+                            {% for recommendation in insights.recommendations %}
+                            <li class="mb-2">
+                                <i class="fas fa-arrow-right text-primary me-2"></i>
+                                {{ recommendation }}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <p class="text-muted">Keep recording dreams to receive personalized recommendations.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Additional Insights -->
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-brain text-primary"></i>
+                            Dream Analysis Summary
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4 text-center">
+                                <h6 class="text-muted">Dream Frequency</h6>
+                                <p class="lead">{{ insights.total_dreams }} dreams recorded</p>
+                                <small class="text-muted">Keep building your dream journal!</small>
+                            </div>
+                            <div class="col-md-4 text-center">
+                                <h6 class="text-muted">Emotional Balance</h6>
+                                {% if insights.average_sentiment > 0.05 %}
+                                <p class="lead text-success">Positive Dreams</p>
+                                <small class="text-muted">Your dreams tend to have positive emotions</small>
+                                {% elif insights.average_sentiment < -0.05 %}
+                                <p class="lead text-danger">Challenging Dreams</p>
+                                <small class="text-muted">Your dreams may reflect stress or concerns</small>
+                                {% else %}
+                                <p class="lead text-secondary">Balanced Dreams</p>
+                                <small class="text-muted">Your dreams show emotional balance</small>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4 text-center">
+                                <h6 class="text-muted">Pattern Recognition</h6>
+                                {% if insights.most_common_themes|length > 3 %}
+                                <p class="lead text-info">Rich Symbolism</p>
+                                <small class="text-muted">Your dreams contain diverse themes</small>
+                                {% elif insights.most_common_themes|length > 1 %}
+                                <p class="lead text-warning">Emerging Patterns</p>
+                                <small class="text-muted">Some recurring themes detected</small>
+                                {% else %}
+                                <p class="lead text-secondary">Building Patterns</p>
+                                <small class="text-muted">Keep recording to identify patterns</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.progress {
+    height: 20px;
+}
+.progress-bar {
+    font-size: 0.9em;
+    font-weight: bold;
+}
+</style>
+{% endblock %}

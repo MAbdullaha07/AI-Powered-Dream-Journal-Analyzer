@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="fas fa-book text-primary"></i>
+                My Dream Journal
+            </h2>
+            <a href="/add_dream" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Add New Dream
+            </a>
+        </div>
+        
+        {% if dreams %}
+        <div class="row">
+            {% for dream in dreams %}
+            <div class="col-md-6 mb-4">
+                <div class="card dream-card">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ dream.title }}</h5>
+                        <p class="text-muted small mb-2">
+                            <i class="fas fa-calendar"></i> {{ dream.date_recorded }}
+                        </p>
+                        <p class="card-text">
+                            {{ dream.content[:150] }}{% if dream.content|length > 150 %}...{% endif %}
+                        </p>
+                        
+                        <div class="mb-3">
+                            <h6 class="small fw-bold">Emotions:</h6>
+                            {% for emotion, count in dream.emotions.items() %}
+                            <span class="emotion-tag">{{ emotion }}</span>
+                            {% endfor %}
+                            {% if not dream.emotions %}
+                            <span class="text-muted small">None detected</span>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <h6 class="small fw-bold">Themes:</h6>
+                            {% for theme, count in dream.themes.items() %}
+                            <span class="theme-tag">{{ theme }}</span>
+                            {% endfor %}
+                            {% if not dream.themes %}
+                            <span class="text-muted small">None detected</span>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                {% if dream.analysis.sentiment %}
+                                {% set sentiment = dream.analysis.sentiment.compound %}
+                                {% if sentiment > 0.05 %}
+                                <span class="badge bg-success">Positive</span>
+                                {% elif sentiment < -0.05 %}
+                                <span class="badge bg-danger">Negative</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Neutral</span>
+                                {% endif %}
+                                {% endif %}
+                            </small>
+                            <button class="btn btn-sm btn-outline-primary" onclick="viewDream({{ dream.id }})">
+                                <i class="fas fa-eye"></i> View Details
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-moon fa-3x text-muted mb-3"></i>
+            <h4 class="text-muted">No Dreams Yet</h4>
+            <p class="text-muted">Start by recording your first dream to see AI analysis and insights.</p>
+            <a href="/add_dream" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Record Your First Dream
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Dream Detail Modal -->
+<div class="modal fade" id="dreamModal" tabindex="-1" aria-labelledby="dreamModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="dreamModalLabel">Dream Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="dreamDetails">
+                <!-- Dream details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+async function viewDream(dreamId) {
+    try {
+        const response = await fetch(`/api/dream/${dreamId}`);
+        const dream = await response.json();
+        
+        if (response.ok) {
+            displayDreamDetails(dream);
+        } else {
+            alert('Error loading dream details: ' + dream.error);
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+function displayDreamDetails(dream) {
+    const detailsContainer = document.getElementById('dreamDetails');
+    
+    let emotionsHtml = '';
+    if (dream.emotions && dream.emotions.length > 0) {
+        emotionsHtml = dream.emotions.map(emotion => `<span class="emotion-tag">${emotion}</span>`).join(' ');
+    } else {
+        emotionsHtml = '<span class="text-muted">No emotions detected</span>';
+    }
+    
+    let themesHtml = '';
+    if (dream.themes && dream.themes.length > 0) {
+        themesHtml = dream.themes.map(theme => `<span class="theme-tag">${theme}</span>`).join(' ');
+    } else {
+        themesHtml = '<span class="text-muted">No themes detected</span>';
+    }
+    
+    const sentimentScore = dream.analysis?.sentiment?.compound || 0;
+    let sentimentLabel = 'Neutral';
+    let sentimentColor = 'secondary';
+    
+    if (sentimentScore > 0.05) {
+        sentimentLabel = 'Positive';
+        sentimentColor = 'success';
+    } else if (sentimentScore < -0.05) {
+        sentimentLabel = 'Negative';
+        sentimentColor = 'danger';
+    }
+    
+    detailsContainer.innerHTML = `
+        <h4>${dream.title}</h4>
+        <p class="text-muted"><i class="fas fa-calendar"></i> ${dream.date_recorded}</p>
+        
+        <h6>Dream Description:</h6>
+        <div class="border rounded p-3 mb-4 bg-light">
+            <p class="mb-0">${dream.content.replace(/\n/g, '<br>')}</p>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <h6><i class="fas fa-heart text-danger"></i> Emotions</h6>
+                <div class="mb-3">${emotionsHtml}</div>
+                
+                <h6><i class="fas fa-tags text-info"></i> Themes</h6>
+                <div class="mb-3">${themesHtml}</div>
+            </div>
+            <div class="col-md-6">
+                <h6><i class="fas fa-chart-bar text-primary"></i> Sentiment</h6>
+                <div class="mb-3">
+                    <span class="badge bg-${sentimentColor}">${sentimentLabel}</span>
+                </div>
+                
+                <h6><i class="fas fa-book text-warning"></i> Analysis</h6>
+                <div class="small text-muted">
+                    <p><strong>Word Count:</strong> ${dream.analysis?.word_count || 'N/A'}</p>
+                    <p><strong>Unique Words:</strong> ${dream.analysis?.unique_words || 'N/A'}</p>
+                </div>
+            </div>
+        </div>
+        
+        ${dream.analysis?.interpretation ? `
+        <hr>
+        <h6><i class="fas fa-lightbulb text-warning"></i> AI Interpretation</h6>
+        <div class="alert alert-light">
+            <p class="mb-0">${dream.analysis.interpretation}</p>
+        </div>
+        ` : ''}
+    `;
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('dreamModal'));
+    modal.show();
+}
+</script>
+{% endblock %}

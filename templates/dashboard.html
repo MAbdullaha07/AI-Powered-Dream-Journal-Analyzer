@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h2 class="card-title">
+                    <i class="fas fa-tachometer-alt text-primary"></i>
+                    Welcome back, {{ session.username }}!
+                </h2>
+                <p class="text-muted">Ready to explore your subconscious mind today?</p>
+                
+                <div class="row mt-4">
+                    <div class="col-md-6 mb-3">
+                        <a href="/add_dream" class="text-decoration-none">
+                            <div class="card border-0 bg-primary text-white h-100 hover-shadow">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-plus fa-2x mb-3"></i>
+                                    <h5>Record New Dream</h5>
+                                    <p class="mb-0">Add a new dream and get instant AI analysis</p>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <a href="/dreams" class="text-decoration-none">
+                            <div class="card border-0 bg-success text-white h-100 hover-shadow">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-book fa-2x mb-3"></i>
+                                    <h5>View Dream Journal</h5>
+                                    <p class="mb-0">Browse your recorded dreams and analyses</p>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <a href="/insights" class="text-decoration-none">
+                            <div class="card border-0 bg-warning text-white h-100 hover-shadow">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-chart-line fa-2x mb-3"></i>
+                                    <h5>Dream Insights</h5>
+                                    <p class="mb-0">Discover patterns and trends in your dreams</p>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="card border-0 bg-info text-white h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-calendar fa-2x mb-3"></i>
+                                <h5>Dream Streak</h5>
+                                <p class="mb-0">Keep recording to build your streak!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-lightbulb text-warning"></i>
+                    Dream Tip of the Day
+                </h5>
+                <div class="alert alert-light" role="alert">
+                    <p class="mb-2"><strong>Keep a dream journal by your bed!</strong></p>
+                    <p class="small text-muted mb-0">
+                        Recording your dreams immediately upon waking improves recall and provides more accurate analysis. 
+                        Dreams fade quickly from memory, so capture them while they're fresh.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-star text-warning"></i>
+                    Quick Stats
+                </h5>
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="border-end">
+                            <h4 class="text-primary mb-0" id="total-dreams">-</h4>
+                            <small class="text-muted">Total Dreams</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <h4 class="text-success mb-0" id="this-week">-</h4>
+                        <small class="text-muted">This Week</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-moon text-primary"></i>
+                    Did You Know?
+                </h5>
+                <div class="small text-muted">
+                    <p><strong>REM Sleep:</strong> Most vivid dreams occur during REM (Rapid Eye Movement) sleep, which happens in cycles throughout the night.</p>
+                    <p><strong>Dream Symbols:</strong> Common dream symbols often have universal meanings across cultures, but personal associations are equally important.</p>
+                    <p class="mb-0"><strong>Lucid Dreaming:</strong> Some people can become aware they're dreaming and even control their dreams with practice.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.hover-shadow {
+    transition: all 0.3s ease;
+}
+.hover-shadow:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+</style>
+
+<script>
+// Load quick stats
+fetch('/api/stats')
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('total-dreams').textContent = data.total || 0;
+        document.getElementById('this-week').textContent = data.this_week || 0;
+    })
+    .catch(error => {
+        console.log('Stats not available yet');
+    });
+</script>
+{% endblock %}
